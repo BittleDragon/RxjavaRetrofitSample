@@ -8,14 +8,15 @@ import android.util.Log;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String TAG = "MainActivity";
+    public static final String TAG = "rxjavaPrint";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,12 +30,15 @@ public class MainActivity extends AppCompatActivity {
         Observable<Integer> observable1 = Observable.create(new ObservableOnSubscribe<Integer>() {
             @Override
             public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
-                emitter.onNext(1);
+                emitter.onError(new NullPointerException());
+                emitter.onComplete();
             }
         });
         Observable<String> observable2 = Observable.create(new ObservableOnSubscribe<String>() {
             @Override
             public void subscribe(ObservableEmitter<String> emitter) throws Exception {
+//                emitter.onNext("数据");
+                emitter.onError(new Throwable("非法参数异常"));
                 emitter.onComplete();
             }
         });
@@ -46,10 +50,27 @@ public class MainActivity extends AppCompatActivity {
             }
         }).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
+                .subscribe(new Observer<String>() {
+                    Disposable d;
                     @Override
-                    public void accept(String s) throws Exception {
-                        Log.i(TAG, "accept: " + s);
+                    public void onSubscribe(Disposable d) {
+                        this.d = d;
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        Log.d(TAG, "onNext: " + s);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "onError: " + e.getMessage());
+                        d.dispose();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
                     }
                 });
     }
